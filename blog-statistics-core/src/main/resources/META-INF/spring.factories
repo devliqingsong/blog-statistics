@@ -1,0 +1,2 @@
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+com.devnolo.blog.statistics.core.config.BlogStatisticsConfig
