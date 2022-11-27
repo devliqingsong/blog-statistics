@@ -79,8 +79,10 @@ function queryStatistics(param, success) {
     httpRequest.onreadystatechange = function () {
         if (httpRequest.status === 200) {
             let json = httpRequest.responseText;
-            let result = JSON.parse(json);
-            success(result);
+            if (json && json !== '') {
+                let result = JSON.parse(json);
+                success(result);
+            }
         }
     };
 }
