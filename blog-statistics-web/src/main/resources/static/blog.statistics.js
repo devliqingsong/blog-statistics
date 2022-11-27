@@ -29,10 +29,14 @@ function statisticsQueryUrl() {
 }
 // 执行浏览统计
 function doStatistics() {
+    let unionKey = window.location.href;
+    if (checkRepeatBrowse(unionKey))
+        return;
+
     let httpRequest = new XMLHttpRequest();
     httpRequest.open('POST', statisticsBrowUrl(), true);
     let param = {
-        blogUrl: window.location.href
+        blogUrl: unionKey
     };
     auth(httpRequest, param);
     httpRequest.setRequestHeader("Content-type","application/json");
@@ -98,4 +102,23 @@ function query(tage, dataAttr) {
 let elements = getElement("script", paramStatisticsBrowTag, paramStatisticsBrowAttr);
 if (elements && elements.length > 0) {
     query(elements[0].getAttribute(paramStatisticsBrowTag), elements[0].getAttribute(paramStatisticsBrowAttr));
+}
+
+// 重复刷新的过滤
+var browseStorageKey = "SessionBrowse";
+function checkRepeatBrowse(unionKey) {
+    let browseStr = sessionStorage.getItem(browseStorageKey);
+    let param;
+    if (browseStr && browseStr !== '') {
+        param = new Set(JSON.parse(browseStr));
+    } else {
+        param = new Set();
+    }
+    if (param.has(unionKey)) {
+        return true;
+    } else {
+        param.add(unionKey);
+        sessionStorage.setItem(browseStorageKey, JSON.stringify(Array.from(param)));
+        return false;
+    }
 }
