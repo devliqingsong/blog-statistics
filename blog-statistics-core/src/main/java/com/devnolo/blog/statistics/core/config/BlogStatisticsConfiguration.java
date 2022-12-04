@@ -1,8 +1,10 @@
 package com.devnolo.blog.statistics.core.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.system.ApplicationHome;
 import org.springframework.stereotype.Component;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -23,7 +25,12 @@ public class BlogStatisticsConfiguration {
     /**
      * 数据文件配置
      */
-    private String file;
+    private String dataName = "default.data";
+
+    /**
+     * 数据文件配置
+     */
+    private String dataDir = null;
 
     private final Map<String, String> authenticationMap = new HashMap<>(Map.of("admin", "g5ldqbpFYlSp5jm"));
 
@@ -51,11 +58,19 @@ public class BlogStatisticsConfiguration {
         return authenticationMap.get(key);
     }
 
-    public String getFile() {
-        return file;
+    public void setDataDir(String dataDir) {
+        this.dataDir = dataDir;
     }
 
-    public void setFile(String file) {
-        this.file = file;
+    public String getDataDir() {
+        return dataDir;
+    }
+
+    public void setDataName(String dataName) {
+        this.dataName = dataName;
+    }
+
+    public String getDataName() {
+        return dataName;
     }
 }

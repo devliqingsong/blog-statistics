@@ -3,17 +3,21 @@ package com.devnolo.blog.statistics.core.repository.impl;
 import com.devnolo.blog.statistics.core.config.BlogStatisticsConfiguration;
 import com.devnolo.blog.statistics.core.repository.BlogStatisticsRepository;
 import com.devnolo.blog.statistics.core.to.BlogStatisticsBrowseTO;
+import org.springframework.boot.system.ApplicationHome;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.util.ClassUtils;
 import org.springframework.util.StringUtils;
 
 import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
 import java.io.*;
+import java.net.URL;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -37,10 +41,6 @@ public class DefaultBlogStatisticsRepository implements BlogStatisticsRepository
 
     @Override
     public void onApplicationEvent(ContextRefreshedEvent event) {
-        String file = blogStatisticsConfiguration.getFile();
-        if (!StringUtils.hasText(file)) {
-            throw new Error("Param blog.statistics.file Is Empty");
-        }
         try {
             initData();
         } catch (IOException e) {
@@ -48,24 +48,52 @@ public class DefaultBlogStatisticsRepository implements BlogStatisticsRepository
         }
     }
 
+    public String getFilePath() {
+        StringBuilder dir = new StringBuilder();
+        if (null == blogStatisticsConfiguration.getDataDir()) {
+            dir.append(getDefaultDir());
+        } else {
+            // 区分 classpath 和 file
+            dir.append(blogStatisticsConfiguration.getDataDir());
+        }
+        if (!dir.toString().endsWith(File.separator)) {
+            dir.append(File.separator);
+        }
+        dir.append(blogStatisticsConfiguration.getDataName());
+        return dir.toString();
+    }
+
+    private String getDefaultDir() {
+        ApplicationHome home = new ApplicationHome();
+        return home.getDir().getAbsolutePath();
+    }
+
+    public File getDataFile() {
+        return new File(getFilePath());
+    }
+
     public void initData() throws IOException {
         if (!initData) {
             synchronized (initDataFlag) {
                 if (!initData) {
                     // 根据配置文件指定的缓存文件加载启动时的数据
-                    String file = blogStatisticsConfiguration.getFile();
-                    // 读取文件，加载初始化、启动数据
-                    try (FileReader fileReader = new FileReader(file); BufferedReader bufferedReader = new BufferedReader(fileReader)) {
-                        while (true) {
-                            String line = bufferedReader.readLine();
-                            if (null == line) break;
-                            if (!StringUtils.hasText(line)) continue;
-                            String[] split = line.split(SPLIT_CHAR);
-                            if (2 != split.length) continue;
-                            dataMap.put(split[0], new AtomicLong(Long.parseLong(split[1])));
+                    File file = getDataFile();
+                    if (file.exists()) {
+                        // 读取文件，加载初始化、启动数据
+                        try (FileReader fileReader = new FileReader(file); BufferedReader bufferedReader = new BufferedReader(fileReader)) {
+                            while (true) {
+                                String line = bufferedReader.readLine();
+                                if (null == line) break;
+                                if (!StringUtils.hasText(line)) continue;
+                                String[] split = line.split(SPLIT_CHAR);
+                                if (2 != split.length) continue;
+                                dataMap.put(split[0], new AtomicLong(Long.parseLong(split[1])));
+                            }
+                        } catch (Exception e) {
+                            System.out.println(file.getName());
+                            System.out.println(file.getAbsolutePath());
+                            e.printStackTrace();
                         }
-                    } catch (Exception e) {
-                        e.printStackTrace();
                     }
                 }
                 initData = true;
@@ -82,12 +110,16 @@ public class DefaultBlogStatisticsRepository implements BlogStatisticsRepository
     public void saveData() {
         synchronized (saveDataFlag) {
             // 根据配置文件指定的缓存文件加载启动时的数据
-            String file = blogStatisticsConfiguration.getFile();
-            File dataBackFile = new File(file + System.currentTimeMillis() + ".back");
+            File oldFile = getDataFile();
+            File dataBackFile = new File(System.currentTimeMillis() + ".back");
             writeData(dataBackFile);
-            File oldFile = new File(file);
-            if (oldFile.exists()) oldFile.delete();
-            dataBackFile.renameTo(oldFile);
+            boolean delete = true;
+            if (oldFile.exists()) {
+                delete = oldFile.delete();
+            }
+            if (delete) {
+                boolean rename = dataBackFile.renameTo(oldFile);
+            }
         }
     }
 
