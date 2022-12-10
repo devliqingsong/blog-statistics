@@ -9,7 +9,7 @@
     <packaging>pom</packaging>
     <properties>
         <!-- Spring Boot 版本 -->
-        <spring-boot-dependencies.version>2.6.3</spring-boot-dependencies.version>
+        <spring-boot-dependencies.version>2.7.0</spring-boot-dependencies.version>
         <java.version>17</java.version>
     </properties>
     <modules>
